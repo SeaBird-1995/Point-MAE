@@ -18,6 +18,8 @@ from utils.checkpoint import get_missing_parameters_message, get_unexpected_para
 from utils.logger import *
 import random
 from knn_cuda import KNN
+
+from quantizer.vector_quantizer import VectorQuantizer
 from extensions.chamfer_dist import ChamferDistanceL1, ChamferDistanceL2
 
 
@@ -340,6 +342,90 @@ class PointAE(nn.Module):
         loss1 = self.loss_func(rebuild_points, gt_points)
 
         if vis: #visualization
+            vis_points = neighborhood.reshape(B * M, -1, 3)
+            full_vis = vis_points + center.unsqueeze(1)
+            full = full_vis
+            full_center = center
+            ret2 = full_vis.reshape(-1, 3).unsqueeze(0)
+            ret1 = full.reshape(-1, 3).unsqueeze(0)
+            # return ret1, ret2
+            return ret1, ret2, full_center
+        else:
+            return loss1
+
+
+@MODELS.register_module()
+class PointVQAE(nn.Module):
+
+    def __init__(self, config):
+        super().__init__()
+        print_log(f'[PointVQAE] ', logger='PointVQAE')
+        self.config = config
+        self.trans_dim = config.transformer_config.trans_dim
+        self.MAE_encoder = MaskTransformer(config)
+        self.group_size = config.group_size
+        self.num_group = config.num_group
+        self.drop_path_rate = config.transformer_config.drop_path_rate
+        self.mask_token = nn.Parameter(torch.zeros(1, 1, self.trans_dim))
+        self.decoder_pos_embed = nn.Sequential(nn.Linear(3, 128), nn.GELU(), nn.Linear(128, self.trans_dim))
+
+        self.decoder_depth = config.transformer_config.decoder_depth
+        self.decoder_num_heads = config.transformer_config.decoder_num_heads
+        dpr = [x.item() for x in torch.linspace(0, self.drop_path_rate, self.decoder_depth)]
+        self.MAE_decoder = TransformerDecoder(
+            embed_dim=self.trans_dim,
+            depth=self.decoder_depth,
+            drop_path_rate=dpr,
+            num_heads=self.decoder_num_heads,
+        )
+
+        self.group_divider = Group(num_group=self.num_group, group_size=self.group_size)
+
+        # prediction head
+        self.increase_dim = nn.Sequential(
+            # nn.Conv1d(self.trans_dim, 1024, 1),
+            # nn.BatchNorm1d(1024),
+            # nn.LeakyReLU(negative_slope=0.2),
+            nn.Conv1d(self.trans_dim, 3 * self.group_size, 1))
+
+        self.quantizer = VectorQuantizer(n_e=1024, e_dim=384)
+
+        trunc_normal_(self.mask_token, std=.02)
+        self.loss = config.loss
+        # loss
+        self.build_loss_func(self.loss)
+
+    def build_loss_func(self, loss_type):
+        if loss_type == "cdl1":
+            self.loss_func = ChamferDistanceL1().cuda()
+        elif loss_type == 'cdl2':
+            self.loss_func = ChamferDistanceL2().cuda()
+        else:
+            raise NotImplementedError
+            # self.loss_func = emd().cuda()
+
+    def forward(self, pts, vis=False, **kwargs):
+        neighborhood, center = self.group_divider(pts)
+
+        x_vis = self.MAE_encoder(neighborhood, center)
+        B, _, C = x_vis.shape  # B VIS C
+
+        pos_emd_vis = self.decoder_pos_embed(center).reshape(B, -1, C)
+
+        ## Vector quantization
+        z_q, loss_vq, encoding_indices = self.quantizer(x_vis)
+
+        x_rec = self.MAE_decoder(z_q, pos_emd_vis)
+
+        B, M, C = x_rec.shape
+        rebuild_points = self.increase_dim(x_rec.transpose(1, 2)).transpose(1, 2).reshape(B * M, -1, 3)  # B M 1024
+
+        gt_points = neighborhood.reshape(B * M, -1, 3)
+
+        loss1 = self.loss_func(rebuild_points, gt_points)
+        loss1 += loss_vq
+
+        if vis:  #visualization
             vis_points = neighborhood.reshape(B * M, -1, 3)
             full_vis = vis_points + center.unsqueeze(1)
             full = full_vis
