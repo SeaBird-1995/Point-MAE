@@ -51,7 +51,7 @@ def test(base_model, test_dataloader, args, config, logger = None):
     with torch.no_grad():
         for idx, (taxonomy_ids, model_ids, data) in enumerate(test_dataloader):
             # import pdb; pdb.set_trace()
-            if  taxonomy_ids[0] not in useful_cate:
+            if taxonomy_ids[0] not in useful_cate or taxonomy_ids[0] == "03759954":
                 continue
             if taxonomy_ids[0] == "02691156":
                 a, b= 90, 135
@@ -83,7 +83,7 @@ def test(base_model, test_dataloader, args, config, logger = None):
                 os.makedirs(data_path)
 
             points = points.squeeze().detach().cpu().numpy()
-            np.savetxt(os.path.join(data_path,'gt.txt'), points, delimiter=';')
+            np.savetxt(os.path.join(data_path,'gt.xyz'), points)
             points = misc.get_ptcloud_img(points,a,b)
             final_image.append(points[150:650,150:675,:])
 
@@ -93,13 +93,13 @@ def test(base_model, test_dataloader, args, config, logger = None):
             # final_image.append(centers)
 
             vis_points = vis_points.squeeze().detach().cpu().numpy()
-            np.savetxt(os.path.join(data_path, 'vis.txt'), vis_points, delimiter=';')
+            np.savetxt(os.path.join(data_path, 'vis.xyz'), vis_points)
             vis_points = misc.get_ptcloud_img(vis_points,a,b)
 
             final_image.append(vis_points[150:650,150:675,:])
 
             dense_points = dense_points.squeeze().detach().cpu().numpy()
-            np.savetxt(os.path.join(data_path,'dense_points.txt'), dense_points, delimiter=';')
+            np.savetxt(os.path.join(data_path,'dense_points.xyz'), dense_points)
             dense_points = misc.get_ptcloud_img(dense_points,a,b)
             final_image.append(dense_points[150:650,150:675,:])
 
