@@ -84,8 +84,8 @@ def test(base_model, test_dataloader, args, config, logger = None):
 
             points = points.squeeze().detach().cpu().numpy()
             np.savetxt(os.path.join(data_path,'gt.xyz'), points)
-            points = misc.get_ptcloud_img(points,a,b)
-            final_image.append(points[150:650,150:675,:])
+            # points = misc.get_ptcloud_img(points,a,b)
+            # final_image.append(points[150:650,150:675,:])
 
             # centers = centers.squeeze().detach().cpu().numpy()
             # np.savetxt(os.path.join(data_path,'center.txt'), centers, delimiter=';')
@@ -94,18 +94,18 @@ def test(base_model, test_dataloader, args, config, logger = None):
 
             vis_points = vis_points.squeeze().detach().cpu().numpy()
             np.savetxt(os.path.join(data_path, 'vis.xyz'), vis_points)
-            vis_points = misc.get_ptcloud_img(vis_points,a,b)
+            # vis_points = misc.get_ptcloud_img(vis_points,a,b)
 
-            final_image.append(vis_points[150:650,150:675,:])
+            # final_image.append(vis_points[150:650,150:675,:])
 
             dense_points = dense_points.squeeze().detach().cpu().numpy()
             np.savetxt(os.path.join(data_path,'dense_points.xyz'), dense_points)
-            dense_points = misc.get_ptcloud_img(dense_points,a,b)
-            final_image.append(dense_points[150:650,150:675,:])
+            # dense_points = misc.get_ptcloud_img(dense_points,a,b)
+            # final_image.append(dense_points[150:650,150:675,:])
 
-            img = np.concatenate(final_image, axis=1)
-            img_path = os.path.join(data_path, f'plot.jpg')
-            cv2.imwrite(img_path, img)
+            # img = np.concatenate(final_image, axis=1)
+            # img_path = os.path.join(data_path, f'plot.jpg')
+            # cv2.imwrite(img_path, img)
 
             if idx > 1500:
                 break

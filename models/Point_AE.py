@@ -19,7 +19,7 @@ from utils.logger import *
 import random
 from knn_cuda import KNN
 
-from quantizer.vector_quantizer import VectorQuantizer
+from .quantizer.vector_quantizer import VectorQuantizer
 from extensions.chamfer_dist import ChamferDistanceL1, ChamferDistanceL2
 
 
@@ -422,17 +422,20 @@ class PointVQAE(nn.Module):
 
         gt_points = neighborhood.reshape(B * M, -1, 3)
 
-        loss1 = self.loss_func(rebuild_points, gt_points)
-        loss1 += loss_vq
+        loss_cd = 100.0 * self.loss_func(rebuild_points, gt_points)
+
+        loss = loss_cd + loss_vq
 
         if vis:  #visualization
             vis_points = neighborhood.reshape(B * M, -1, 3)
-            full_vis = vis_points + center.unsqueeze(1)
-            full = full_vis
+            full_vis = vis_points + center.view(-1, 3).unsqueeze(1)
             full_center = center
-            ret2 = full_vis.reshape(-1, 3).unsqueeze(0)
-            ret1 = full.reshape(-1, 3).unsqueeze(0)
+            ret1 = full_vis.reshape(-1, 3).unsqueeze(0)
             # return ret1, ret2
-            return ret1, ret2, full_center
+            return ret1, ret1, full_center
         else:
-            return loss1
+            return loss, {
+                'loss_cd': loss_cd,
+                'loss_vq': loss_vq,
+                'unique_idx_length': len(encoding_indices.unique())
+            }
