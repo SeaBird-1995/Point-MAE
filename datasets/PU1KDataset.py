@@ -10,10 +10,53 @@ import os
 import numpy as np
 import os.path as osp
 import torch.utils.data as data
+import h5py
 
 from utils.pc_utils.operations import normalize_point_cloud
 import utils.pc_utils.transform_utils as utils
 from .build import DATASETS
+
+
+@DATASETS.register_module()
+class PU1KStage1Dataset(data.Dataset):
+
+    def __init__(self,
+                 config):
+
+        super().__init__()
+
+        h5_path = config.h5_path
+        split = config.split
+
+        self.isTrain = config.isTrain
+        self.use_aug = config.use_aug
+
+        h5_file = h5py.File(h5_path)
+        poisson_1024 = h5_file['poisson_1024'][:]  # (69000, 1024, 3)
+
+        normalized_data, centroid, furthest_distance = normalize_point_cloud(poisson_1024)
+
+        self.gt = normalized_data
+        self.radius = np.ones(shape=(len(self.gt)))
+
+        if split is not None and osp.exists(split):
+            self._load_split_file(split)
+
+    def __len__(self):
+        return self.gt.shape[0]
+
+    def __getitem__(self, index):
+        gt_data = self.gt[index].astype(np.float32)  # (1024, 3)
+        radius_data = np.array([self.radius[index]]).astype(np.float32)
+
+        if self.isTrain and self.use_aug:
+            gt_data, _ = utils.rotate_point_cloud_and_gt(gt_data)
+
+        return "None", "None", gt_data
+
+    def _load_split_file(self, split):
+        index = np.loadtxt(split).astype(np.int)
+        self.gt = self.gt[index, :]
 
 
 @DATASETS.register_module()
