@@ -126,7 +126,7 @@ def run_net(args, config, train_writer=None, val_writer=None):
             data_time.update(time.time() - batch_start_time)
             npoints = config.dataset.train.others.npoints
             dataset_name = config.dataset.train._base_.NAME
-            if dataset_name == 'ShapeNet':
+            if dataset_name == 'ShapeNet' or dataset_name == 'PU1KCompleteData':
                 points = data.cuda()
             elif dataset_name == 'ModelNet':
                 points = data[0].cuda()
@@ -173,8 +173,8 @@ def run_net(args, config, train_writer=None, val_writer=None):
             if idx % 20 == 0:
                 print_log('[Epoch %d/%d][Batch %d/%d] BatchTime = %.3f (s) DataTime = %.3f (s) Losses = %s lr = %.6f Loss_VQ = %.5f Loss_cd = %.5f Length = %d' %
                             (epoch, config.max_epoch, idx + 1, n_batches, batch_time.val(), data_time.val(),
-                            ['%.4f' % l for l in losses.val()], 
-                            optimizer.param_groups[0]['lr'], 
+                            ['%.4f' % l for l in losses.val()],
+                            optimizer.param_groups[0]['lr'],
                             log_dict['loss_vq'], log_dict['loss_cd'], log_dict['unique_idx_length']), logger = logger)
         if isinstance(scheduler, list):
             for item in scheduler:
