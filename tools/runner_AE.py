@@ -64,7 +64,6 @@ def run_net(args, config, train_writer=None, val_writer=None):
     # build dataset
     (train_sampler, train_dataloader), (_, test_dataloader),= builder.dataset_builder(args, config.dataset.train), \
                                                             builder.dataset_builder(args, config.dataset.val)
-    (_, extra_train_dataloader)  = builder.dataset_builder(args, config.dataset.extra_train) if config.dataset.get('extra_train') else (None, None)
     # build model
     base_model = builder.model_builder(config.model)
     if args.use_gpu:
@@ -201,12 +200,17 @@ def run_net(args, config, train_writer=None, val_writer=None):
         if epoch % 25 ==0 and epoch >=250:
             builder.save_checkpoint(base_model, optimizer, epoch, metrics, best_metrics, f'ckpt-epoch-{epoch:03d}', args,
                                     logger=logger)
-        # if (config.max_epoch - epoch) < 10:
-        #     builder.save_checkpoint(base_model, optimizer, epoch, metrics, best_metrics, f'ckpt-epoch-{epoch:03d}', args, logger = logger)
     if train_writer is not None:
         train_writer.close()
     if val_writer is not None:
         val_writer.close()
+
+
+def validate_new(base_model, input_pc, epoch, logger=None):
+    ## Forward the model
+    feature = base_model(input_pc, vis=True)
+    pass
+
 
 def validate(base_model, extra_train_dataloader, test_dataloader, epoch, val_writer, args, config, logger = None):
     print_log(f"[VALIDATION] Start validating epoch {epoch}", logger = logger)

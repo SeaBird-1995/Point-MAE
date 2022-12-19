@@ -342,14 +342,14 @@ class PointAE(nn.Module):
         loss1 = self.loss_func(rebuild_points, gt_points)
 
         if vis: #visualization
+            full_rebuild = rebuild_points + center.unsqueeze(1)
             vis_points = neighborhood.reshape(B * M, -1, 3)
             full_vis = vis_points + center.unsqueeze(1)
-            full = full_vis
-            full_center = center
+            
             ret2 = full_vis.reshape(-1, 3).unsqueeze(0)
-            ret1 = full.reshape(-1, 3).unsqueeze(0)
+            ret1 = full_rebuild.reshape(-1, 3).unsqueeze(0)
             # return ret1, ret2
-            return ret1, ret2, full_center
+            return ret1, ret2, center
         else:
             return loss1
 
@@ -426,13 +426,17 @@ class PointVQAE(nn.Module):
 
         loss = loss_cd + loss_vq
 
-        if vis:  #visualization
+        if vis: #visualization
+            center = center.reshape(-1, 3)
+            full_rebuild = rebuild_points + center.unsqueeze(1)
+            
             vis_points = neighborhood.reshape(B * M, -1, 3)
-            full_vis = vis_points + center.view(-1, 3).unsqueeze(1)
-            full_center = center
-            ret1 = full_vis.reshape(-1, 3).unsqueeze(0)
+            full_vis = vis_points + center.unsqueeze(1)
+            
+            ret2 = full_vis.reshape(-1, 3).unsqueeze(0)
+            ret1 = full_rebuild.reshape(-1, 3).unsqueeze(0)
             # return ret1, ret2
-            return ret1, ret1, full_center
+            return ret1, ret2, center
         else:
             return loss, {
                 'loss_cd': loss_cd,
