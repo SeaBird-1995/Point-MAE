@@ -52,7 +52,7 @@ class PU1KStage1Dataset(data.Dataset):
         if self.isTrain and self.use_aug:
             gt_data, _ = utils.rotate_point_cloud_and_gt(gt_data)
 
-        return "None", "None", gt_data
+        return "04090263", "04090263", gt_data
 
     def _load_split_file(self, split):
         index = np.loadtxt(split).astype(np.int)

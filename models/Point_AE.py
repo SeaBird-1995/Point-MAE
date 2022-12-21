@@ -342,6 +342,7 @@ class PointAE(nn.Module):
         loss1 = self.loss_func(rebuild_points, gt_points)
 
         if vis: #visualization
+            center = center.reshape(-1, 3)
             full_rebuild = rebuild_points + center.unsqueeze(1)
             vis_points = neighborhood.reshape(B * M, -1, 3)
             full_vis = vis_points + center.unsqueeze(1)

@@ -69,16 +69,12 @@ def test(base_model, test_dataloader, args, config, logger = None):
                 a, b = 0, 0
 
 
-            dataset_name = config.dataset.test._base_.NAME
-            if dataset_name == 'ShapeNet':
-                points = data.cuda()
-            else:
-                raise NotImplementedError(f'Train phase do not support {dataset_name}')
+            points = data.cuda()
 
             # dense_points, vis_points = base_model(points, vis=True)
             dense_points, vis_points, centers= base_model(points, vis=True)
             final_image = []
-            data_path = f'./vis/{taxonomy_ids[0]}_{idx}'
+            data_path = f'./vis_{args.exp_name}/{taxonomy_ids[0]}_{idx}'
             if not os.path.exists(data_path):
                 os.makedirs(data_path)
 

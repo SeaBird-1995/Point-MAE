@@ -19,8 +19,12 @@ from utils.AverageMeter import AverageMeter
 from sklearn.svm import LinearSVC
 import numpy as np
 from torchvision import transforms
+from torchmetrics import MeanMetric
+
 from datasets import data_transforms
 from pointnet2_ops import pointnet2_utils
+from .pu_loss import ChamferLoss
+
 
 train_transforms = transforms.Compose(
     [
@@ -206,10 +210,21 @@ def run_net(args, config, train_writer=None, val_writer=None):
         val_writer.close()
 
 
-def validate_new(base_model, input_pc, epoch, logger=None):
+def validate_new(base_model, test_dataloader, epoch, logger=None):
+    chamfer_criteria = ChamferLoss()
+
     ## Forward the model
-    feature = base_model(input_pc, vis=True)
-    pass
+    avg_loss_metric = MeanMetric()
+    with torch.no_grad():
+        for idx, (taxonomy_ids, model_ids, data) in enumerate(test_dataloader):
+            dense_points, vis_points, centers= base_model(data, vis=True)
+
+            ## Compute the loss
+            loss_cd = chamfer_criteria(dense_points, data)
+            avg_loss_metric.update(loss_cd)
+
+        avg_loss = avg_loss_metric.compute()
+        print_log('[Validation] EPOCH: %d  avg cd loss = %.4f' % (epoch, avg_loss), logger=logger)
 
 
 def validate(base_model, extra_train_dataloader, test_dataloader, epoch, val_writer, args, config, logger = None):
