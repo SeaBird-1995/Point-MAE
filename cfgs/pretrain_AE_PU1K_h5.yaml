@@ -14,11 +14,11 @@ scheduler: {
 
 dataset: {
   train: {_base_: cfgs/dataset_configs/PU1K_h5.yaml,
-          others: {subset: 'train', npoints: 1024}},
+          others: {subset: 'train', npoints: 1024, split: data/PU1K/train/train.txt, isTrain: True}},
   val : { _base_: cfgs/dataset_configs/ShapeNet-55.yaml,
             others: {subset: 'test', npoints: 1024}},
   test : { _base_: cfgs/dataset_configs/PU1K_h5.yaml,
-            others: {subset: 'test', npoints: 1024}}
+            others: {subset: 'test', npoints: 1024, split: data/PU1K/train/val.txt, isTrain: False}}
 }
 
 model : {
