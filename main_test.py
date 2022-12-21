@@ -10,7 +10,7 @@ Description:
 from tools import pretrain_run_net as pretrain
 # from tools import train_AE as pretrain
 from tools import finetune_run_net as finetune
-from tools import test_run_net as test_net
+from tools.test_runner import test_net
 from utils import parser, dist_utils, misc
 from utils.logger import *
 from utils.config import *
@@ -50,7 +50,8 @@ def main():
                              deterministic=args.deterministic)  # seed + rank, for augmentation
 
     # run
-    # test_net(args, config)
+    device = torch.device('cuda:0' if args.use_gpu else 'cpu')
+    test_net(args, config, device)
 
 
 if __name__ == '__main__':
