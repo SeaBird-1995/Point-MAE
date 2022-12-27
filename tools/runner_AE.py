@@ -67,14 +67,13 @@ def evaluate_svm(train_features, train_labels, test_features, test_labels):
 def run_net(args, config, train_writer=None, val_writer=None):
     logger = get_logger(args.log_name)
     # build dataset
-    (train_sampler, train_dataloader), (_, test_dataloader),= builder.dataset_builder(args, config.dataset.train), \
-                                                            builder.dataset_builder(args, config.dataset.val)
+    (train_sampler, train_dataloader) = builder.dataset_builder(args, config.dataset.train)
+    (_, test_dataloader) = builder.dataset_builder(args, config.dataset.test)
+
     # build model
     base_model = builder.model_builder(config.model)
     if args.use_gpu:
         base_model.to(args.local_rank)
-
-    # from IPython import embed; embed()
 
     # parameter setting
     start_epoch = 0
@@ -191,8 +190,11 @@ def run_net(args, config, train_writer=None, val_writer=None):
             (epoch,  epoch_end_time - epoch_start_time, ['%.4f' % l for l in losses.avg()],
              optimizer.param_groups[0]['lr']), logger = logger)
 
-        # ### Test the model
-        # test_metric(base_model, test_dataloader, args, config, args.local_rank, logger=logger)
+        ### Test the model
+        if epoch % 3 == 0:
+            cd, hd = test_metric(base_model, test_dataloader, args, config, args.local_rank, logger=logger)
+            val_writer.add_scalar('CD', cd, epoch)
+            val_writer.add_scalar('HD', hd, epoch)
 
         builder.save_checkpoint(base_model, optimizer, epoch, metrics, best_metrics, 'ckpt-last', args, logger = logger)
         if epoch % 25 ==0 and epoch >=250:

@@ -55,7 +55,7 @@ def main():
             config.dataset.extra_train.others.bs = config.total_bs * 2
         config.dataset.val.others.bs = config.total_bs * 2
         if config.dataset.get('test'):
-            config.dataset.test.others.bs = config.total_bs 
+            config.dataset.test.others.bs = 1
     # log 
     log_args_to_file(args, 'args', logger = logger)
     log_config_to_file(config, 'config', logger = logger)
