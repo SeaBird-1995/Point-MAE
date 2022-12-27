@@ -1,0 +1,4 @@
+NAME: PU1KTestData
+data_dir: data/PU1K/test
+num_input_point: 2048
+up_ratio: 4

@@ -129,13 +129,11 @@ def run_net(args, config, train_writer=None, val_writer=None):
             data_time.update(time.time() - batch_start_time)
             npoints = config.dataset.train.others.npoints
             dataset_name = config.dataset.train._base_.NAME
-            if dataset_name == 'ShapeNet' or dataset_name == 'PU1KCompleteData':
-                points = data.cuda()
-            elif dataset_name == 'ModelNet':
+            if dataset_name == 'ModelNet':
                 points = data[0].cuda()
                 points = misc.fps(points, npoints)
             else:
-                raise NotImplementedError(f'Train phase do not support {dataset_name}')
+                points = data.cuda()
 
             assert points.size(1) == npoints
             points = train_transforms(points)
