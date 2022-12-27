@@ -24,6 +24,7 @@ from torchmetrics import MeanMetric
 from datasets import data_transforms
 from pointnet2_ops import pointnet2_utils
 from .pu_loss import ChamferLoss
+from .test_runner import test_metric
 
 
 train_transforms = transforms.Compose(
@@ -190,14 +191,9 @@ def run_net(args, config, train_writer=None, val_writer=None):
             (epoch,  epoch_end_time - epoch_start_time, ['%.4f' % l for l in losses.avg()],
              optimizer.param_groups[0]['lr']), logger = logger)
 
-        # if epoch % args.val_freq == 0 and epoch != 0:
-        #     # Validate the current model
-        #     metrics = validate(base_model, extra_train_dataloader, test_dataloader, epoch, val_writer, args, config, logger=logger)
-        #
-        #     # Save ckeckpoints
-        #     if metrics.better_than(best_metrics):
-        #         best_metrics = metrics
-        #         builder.save_checkpoint(base_model, optimizer, epoch, metrics, best_metrics, 'ckpt-best', args, logger = logger)
+        # ### Test the model
+        # test_metric(base_model, test_dataloader, args, config, args.local_rank, logger=logger)
+
         builder.save_checkpoint(base_model, optimizer, epoch, metrics, best_metrics, 'ckpt-last', args, logger = logger)
         if epoch % 25 ==0 and epoch >=250:
             builder.save_checkpoint(base_model, optimizer, epoch, metrics, best_metrics, f'ckpt-epoch-{epoch:03d}', args,

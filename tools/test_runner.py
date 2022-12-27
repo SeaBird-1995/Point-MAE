@@ -23,6 +23,7 @@ from pointnet2_ops import pointnet2_utils
 from torchmetrics import MeanMetric
 from .pu_loss import ChamferLoss
 import utils.pc_utils.sampling_utils as operations
+from .metrics import online_evaluation
 
 
 def test_net(args, config, device):
@@ -36,7 +37,7 @@ def test_net(args, config, device):
     # base_model.load_model_from_ckpt(args.ckpts) # for BERT
     base_model.to(device)
      
-    test(base_model, test_dataloader, args, config, device, logger=logger)
+    test_metric(base_model, test_dataloader, args, config, device, logger=logger)
 
 
 def test(base_model, test_dataloader, args, config, device, logger=None):
@@ -107,11 +108,18 @@ def test_metric(base_model, test_dataloader, args, config, device, logger=None):
         for idx, (name, norm_params, data) in tqdm(enumerate(test_dataloader), total=len(test_dataloader)):
             points = data.to(device)
             centroid, furthest_distance = norm_params
+            centroid = centroid.to(device)
+            furthest_distance = furthest_distance.to(device)
 
             pred_pc = _predict_patches(base_model, points, 1024, 3, 8192, NCHW=False)
             ## Convert to the original scale
             pred_pc = centroid + pred_pc * furthest_distance
 
             ## save the results
-            save_path = osp.join(save_dir, f"{name}.xyz")
+            save_path = osp.join(save_dir, f"{name[0]}.xyz")
             np.savetxt(save_path, pred_pc[0].cpu().numpy(), fmt='%.6f')
+
+    GT_DIR = "/data1/zhanghm/Datasets/PU_Datasets/PU1K/test/input_2048/gt_8192"
+    cd, hd = online_evaluation(save_dir, GT_DIR, save_dir)
+    print_log(f"CD={cd:.5f}, HD={hd:.5f}")
+    return cd, hd

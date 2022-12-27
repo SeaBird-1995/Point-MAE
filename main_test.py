@@ -35,6 +35,7 @@ def main():
     # config
     config = get_config(args, logger=logger)
     config.dataset.test.others.bs = config.total_bs
+    config.dataset.test.others.bs = 1
     
     # log
     log_args_to_file(args, 'args', logger=logger)
