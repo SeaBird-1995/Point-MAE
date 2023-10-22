@@ -121,5 +121,4 @@ def test_metric(base_model, test_dataloader, args, config, device, logger=None):
 
     GT_DIR = "/data1/zhanghm/Datasets/PU_Datasets/PU1K/test/input_2048/gt_8192"
     cd, hd = online_evaluation(save_dir, GT_DIR, save_dir)
-    print_log(f"CD={cd:.5f}, HD={hd:.5f}")
     return cd, hd

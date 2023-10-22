@@ -19,7 +19,7 @@ from utils.logger import *
 import random
 from knn_cuda import KNN
 
-from .quantizer.vector_quantizer import VectorQuantizer
+from .quantizer.vector_quantizer import VectorQuantizer, MovingAverageVectorQuantizer
 from extensions.chamfer_dist import ChamferDistanceL1, ChamferDistanceL2
 
 
@@ -389,7 +389,8 @@ class PointVQAE(nn.Module):
             # nn.LeakyReLU(negative_slope=0.2),
             nn.Conv1d(self.trans_dim, 3 * self.group_size, 1))
 
-        self.quantizer = VectorQuantizer(n_e=1024, e_dim=384)
+        # self.quantizer = VectorQuantizer(n_e=512, e_dim=384)
+        self.quantizer = MovingAverageVectorQuantizer(n_e=1024, e_dim=384)
 
         trunc_normal_(self.mask_token, std=.02)
         self.loss = config.loss
@@ -423,7 +424,7 @@ class PointVQAE(nn.Module):
 
         gt_points = neighborhood.reshape(B * M, -1, 3)
 
-        loss_cd = 100.0 * self.loss_func(rebuild_points, gt_points)
+        loss_cd = 1000.0 * self.loss_func(rebuild_points, gt_points)
 
         loss = loss_cd + loss_vq
 

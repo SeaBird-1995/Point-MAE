@@ -13,6 +13,8 @@ import json
 from tools import builder
 from utils import misc, dist_utils
 import time
+from torchmetrics import MinMetric
+
 from utils.logger import *
 from utils.AverageMeter import AverageMeter
 
@@ -79,6 +81,8 @@ def run_net(args, config, train_writer=None, val_writer=None):
     start_epoch = 0
     best_metrics = Acc_Metric(0.)
     metrics = Acc_Metric(0.)
+
+    cd_metric = MinMetric()
 
     # resume ckpts
     if args.resume:
@@ -165,6 +169,8 @@ def run_net(args, config, train_writer=None, val_writer=None):
 
             if train_writer is not None:
                 train_writer.add_scalar('Loss/Batch/Loss', loss.item(), n_itr)
+                train_writer.add_scalar('Loss/Batch/VQ_Loss', log_dict['loss_vq'].item(), n_itr)
+                train_writer.add_scalar('Loss/Batch/CD_Loss', log_dict['loss_cd'].item(), n_itr)
                 train_writer.add_scalar('Loss/Batch/LR', optimizer.param_groups[0]['lr'], n_itr)
 
 
@@ -192,14 +198,20 @@ def run_net(args, config, train_writer=None, val_writer=None):
 
         ### Test the model
         if epoch % 3 == 0:
+            print_log("Testing the model ...", logger=logger)
             cd, hd = test_metric(base_model, test_dataloader, args, config, args.local_rank, logger=logger)
+
             val_writer.add_scalar('CD', cd, epoch)
             val_writer.add_scalar('HD', hd, epoch)
+            if cd < cd_metric.value:
+                builder.save_checkpoint(base_model, optimizer, epoch, metrics, best_metrics, 
+                                        f'ckpt-epoch-{epoch:03d}_cd_{cd:.5f}', args,
+                                        logger=logger)
+            cd_metric.update(cd)
+            print_log(f"CD={cd:.5f}, HD={hd:.5f} Best CD={cd_metric.value:.5f}", logger=logger)
 
         builder.save_checkpoint(base_model, optimizer, epoch, metrics, best_metrics, 'ckpt-last', args, logger = logger)
-        if epoch % 25 ==0 and epoch >=250:
-            builder.save_checkpoint(base_model, optimizer, epoch, metrics, best_metrics, f'ckpt-epoch-{epoch:03d}', args,
-                                    logger=logger)
+
     if train_writer is not None:
         train_writer.close()
     if val_writer is not None:
